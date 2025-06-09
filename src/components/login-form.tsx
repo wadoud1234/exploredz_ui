@@ -23,6 +23,7 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import type { ResponseType, User } from "@/types";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { API_URL } from "@/constants";
 
 const loginSchema = z.object({
   // name: z.string().trim().min(1, { message: "Name is required" }),
@@ -48,7 +49,7 @@ function useLoginForm() {
   const queryClient = useQueryClient();
   const { mutate } = useMutation({
     mutationFn: async (formData: LoginSchema) => {
-      const response = await fetch("http://localhost:4000/api/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         body: JSON.stringify(formData),
         headers: {
