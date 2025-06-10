@@ -24,13 +24,14 @@ import {
   Form,
   FormControl,
   FormDescription,
+  // FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -42,14 +43,25 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { API_URL, wilayas } from "@/constants";
+import { getCurrentUserQueryOptions } from "@/data/queries";
 import { wilayaCodeSchema } from "@/schemas";
 import type { Place, ResponseType } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { CloudUploadIcon, PlusIcon, XIcon } from "lucide-react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  ImageKitAbortError,
+  ImageKitInvalidRequestError,
+  ImageKitServerError,
+  ImageKitUploadNetworkError,
+  upload,
+} from "@imagekit/react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState } from "react";
 
 const MAX_IMAGES = 2;
 const MB = 1024 * 1024;
@@ -70,13 +82,28 @@ export const createPlaceSchema = z.object({
       message: "File size must be less than 5MB",
       path: ["files"],
     }),
-  // createdById: z.string().cuid(), // assuming you use Prisma cuid() for user ID
-  // userId: z.string().cuid().optional(), // optional secondary user association
 });
 
 type CreatePlaceSchema = z.infer<typeof createPlaceSchema>;
 
+async function uploadImageAuthenticator() {
+  const authRes = await fetch(`${API_URL}/images`);
+  const { signature, expire, token, publicKey } = (await authRes.json()) as {
+    token: string;
+    expire: number;
+    signature: string;
+    publicKey: string;
+  };
+  return { signature, expire, token, publicKey };
+}
+
 function useCreatePlace() {
+  const { uploadImages } = useUploadImages();
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery(getCurrentUserQueryOptions());
+  const createdById = data?.data.user.id;
   const router = useRouter();
   const form = useForm<CreatePlaceSchema>({
     resolver: zodResolver(createPlaceSchema),
@@ -85,37 +112,68 @@ function useCreatePlace() {
       description: "",
       wilayaCode: 1,
       images: [],
-      // createdById: "",
-      // userId: "",
+    },
+  });
+
+  const { mutate } = useMutation({
+    mutationFn: async (formData: CreatePlaceSchema) => {
+      const images = (await uploadImages(formData.images)).filter((i) => i);
+      console.log({ images });
+
+      const response = await fetch(`${API_URL}/places`, {
+        method: "POST",
+        body: JSON.stringify({ ...formData, createdById, images }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = (await response.json()) as ResponseType<Place>;
+      if (data.success) return data.data;
+      throw new Error(data.error);
+    },
+    onSuccess: async (data) => {
+      toast.success("Place Created", {
+        description: `${data.name} has been added.`,
+      });
+      form.reset();
+      await queryClient.cancelQueries({ queryKey: ["places"] });
+
+      // Optimistically update the cache
+      queryClient.setQueriesData<Place[]>(
+        { queryKey: ["places"] },
+        (oldData) => {
+          return oldData ? [...oldData, data] : [data];
+        }
+      );
+
+      // Invalidate to ensure fresh data is eventually fetched from server
+      queryClient.invalidateQueries({ queryKey: ["places"] });
+
+      setOpen(false);
+      router.invalidate();
+    },
+    onError: (error) => {
+      toast.error("Error", { description: error.message });
     },
   });
 
   async function onSubmit(formData: CreatePlaceSchema) {
-    const response = await fetch(`${API_URL}/places`, {
-      method: "POST",
-      body: JSON.stringify(formData),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const data = (await response.json()) as ResponseType<Place>;
-    if (data.success) {
-      toast.success("Place Created");
-      router.invalidate();
-    } else {
-      toast.error("Error", { description: data.error });
-    }
+    mutate(formData);
   }
-  return { form, onSubmit, isPending: form.formState.isSubmitting };
+  return {
+    form,
+    onSubmit,
+    isPending: form.formState.isSubmitting,
+    open,
+    setOpen,
+  };
 }
 
 export default function CreatePlaceDialog() {
-  const { form, onSubmit, isPending } = useCreatePlace();
-  console.log({ form, state: form.formState });
-  console.log({ isPending });
+  const { form, onSubmit, isPending, open, setOpen } = useCreatePlace();
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <PlusIcon />
@@ -223,74 +281,153 @@ function CreatePlaceForm({ form }: { form: UseFormReturn<CreatePlaceSchema> }) {
   );
 }
 
+function useUploadImages() {
+  async function uploadImages(imagesFiles: File[]) {
+    const authParams = await uploadImageAuthenticator();
+    const images = await Promise.all(
+      imagesFiles.map((file) => uploadSingleImage(file, authParams))
+    );
+    console.log({ images });
+    return images;
+  }
+
+  async function uploadSingleImage(
+    file: File,
+    authParams: {
+      token: string;
+      expire: number;
+      signature: string;
+      publicKey: string;
+    }
+  ) {
+    const { signature, expire, token, publicKey } = authParams;
+    console.log({ signature, expire, token, publicKey });
+    try {
+      const uploadResponse = await upload({
+        expire,
+        token,
+        signature,
+        publicKey,
+        file,
+        fileName: file.name,
+      });
+      return uploadResponse.url;
+    } catch (error) {
+      // Handle specific error types provided by the ImageKit SDK.
+      if (error instanceof ImageKitAbortError) {
+        console.error("Upload aborted:", error.reason);
+      } else if (error instanceof ImageKitInvalidRequestError) {
+        console.error("Invalid request:", error.message);
+      } else if (error instanceof ImageKitUploadNetworkError) {
+        console.error("Network error:", error.message);
+      } else if (error instanceof ImageKitServerError) {
+        console.error("Server error:", error.message);
+      } else {
+        // Handle any other errors that may occur.
+        console.error("Upload error:", error);
+      }
+    }
+  }
+  return { uploadSingleImage, uploadImages };
+}
+
 function UploadImagesFormField({
   form,
 }: {
   form: UseFormReturn<CreatePlaceSchema>;
 }) {
+  // const fileInputRef = useRef<HTMLInputElement>(null);
+  // const [progress, setProgress] = useState(0);
+  // const abortController = new AbortController();
   return (
-    <FormField
-      control={form.control}
-      name="images"
-      render={({ field }) => (
-        <FormItem className="max-w-full">
-          <FormLabel>Images</FormLabel>
-          <FormControl>
-            <FileUpload
-              value={field.value}
-              onValueChange={field.onChange}
-              accept="image/*"
-              maxFiles={2}
-              maxSize={5 * 1024 * 1024}
-              onFileReject={(_, message) => {
-                form.setError("images", {
-                  message,
-                });
-              }}
-              multiple
-            >
-              <FileUploadDropzone className="flex-row border-dotted">
-                <CloudUploadIcon className="size-4" />
-                Drag and drop or
-                <FileUploadTrigger asChild>
-                  <Button variant="link" size="sm" className="p-0">
-                    choose files
-                  </Button>
-                </FileUploadTrigger>
-                to upload
-              </FileUploadDropzone>
-              {field.value.length > 0 && (
-                <ScrollArea className="h-20 w-full rounded-md border">
-                  <FileUploadList className="flex-1 max-w-full">
-                    {field.value.map((file, index) => (
-                      <FileUploadItem
-                        className="flex-1 max-w-full"
-                        key={index}
-                        value={file}
-                      >
-                        <FileUploadItemPreview />
-                        <FileUploadItemMetadata />
-                        <FileUploadItemDelete asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7"
-                          >
-                            <XIcon />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </FileUploadItemDelete>
-                      </FileUploadItem>
-                    ))}
-                  </FileUploadList>
-                </ScrollArea>
-              )}
-            </FileUpload>
-          </FormControl>
-          <FormDescription>Upload up to 4 images max.</FormDescription>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+    <>
+      {/* File input element using React ref */}
+      {/* <input type="file" multiple ref={fileInputRef} /> */}
+      {/* Button to trigger the upload process */}
+      {/* {fileInputRef.current &&
+      fileInputRef.current.files &&
+      fileInputRef.current.files.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => {
+            console.log({ files: fileInputRef?.current?.files });
+            if (
+              fileInputRef.current &&
+              fileInputRef.current.files &&
+              fileInputRef.current.files.length > 0
+            )
+              uploadImages(Array.from(fileInputRef.current.files));
+          }}
+        >
+          Upload file
+        </button>
+      ) : null}
+      <br />
+      {/* Display the current upload progress */}
+      {/* Upload progress: <progress value={progress} max={100}></progress> */}
+      <FormField
+        control={form.control}
+        name="images"
+        render={({ field }) => (
+          <FormItem className="max-w-full">
+            <FormLabel>Images</FormLabel>
+            <FormControl>
+              <FileUpload
+                value={field.value}
+                onValueChange={field.onChange}
+                accept="image/*"
+                maxFiles={2}
+                maxSize={5 * 1024 * 1024}
+                onFileReject={(_, message) => {
+                  form.setError("images", {
+                    message,
+                  });
+                }}
+                multiple
+              >
+                <FileUploadDropzone className="flex-row border-dotted">
+                  <CloudUploadIcon className="size-4" />
+                  Drag and drop or
+                  <FileUploadTrigger asChild>
+                    <Button variant="link" size="sm" className="p-0">
+                      choose files
+                    </Button>
+                  </FileUploadTrigger>
+                  to upload
+                </FileUploadDropzone>
+                {field.value.length > 0 && (
+                  <ScrollArea className="h-20 w-full rounded-md border">
+                    <FileUploadList className="flex-1 max-w-full">
+                      {field.value.map((file, index) => (
+                        <FileUploadItem
+                          className="flex-1 max-w-full"
+                          key={index}
+                          value={file}
+                        >
+                          <FileUploadItemPreview />
+                          <FileUploadItemMetadata />
+                          <FileUploadItemDelete asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                            >
+                              <XIcon />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </FileUploadItemDelete>
+                        </FileUploadItem>
+                      ))}
+                    </FileUploadList>
+                  </ScrollArea>
+                )}
+              </FileUpload>
+            </FormControl>
+            <FormDescription>Upload up to 4 images max.</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </>
   );
 }

@@ -1,19 +1,57 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
+// import { IconTrendingUp } from "@tabler/icons-react";
 
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import {
   Card,
-  CardAction,
+  // CardAction,
   CardDescription,
-  CardFooter,
+  // CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getDashboardStatsQueryOptions } from "@/data/queries";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Skeleton } from "./ui/skeleton";
 
-export function SectionCards() {
+export function SelectionCardSkeleton() {
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      <Card className="@container/card">
+      <Card className="@container/card flex flex-col justify-between">
+        <CardHeader>
+          <CardDescription>
+            <Skeleton className="h-6 w-30" />
+          </CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            <Skeleton className="h-8 w-30" />
+          </CardTitle>
+        </CardHeader>
+      </Card>
+      <Card className="@container/card flex flex-col justify-between">
+        <CardHeader>
+          <CardDescription>
+            <Skeleton className="h-6 w-30" />
+          </CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            <Skeleton className="h-8 w-30" />
+          </CardTitle>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+}
+
+export function SectionCards() {
+  const { data: stats, error } = useSuspenseQuery(
+    getDashboardStatsQueryOptions()
+  );
+  if (error) {
+    toast.error("Stats Fetching Failed", { description: error.message });
+    return <p>Stats Fetching Failed</p>;
+  }
+  return (
+    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      {/* <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Revenue</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -34,8 +72,8 @@ export function SectionCards() {
             Visitors for the last 6 months
           </div>
         </CardFooter>
-      </Card>
-      <Card className="@container/card">
+      </Card> */}
+      {/* <Card className="@container/card">
         <CardHeader>
           <CardDescription>New Customers</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
@@ -56,46 +94,46 @@ export function SectionCards() {
             Acquisition needs attention
           </div>
         </CardFooter>
-      </Card>
+      </Card> */}
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Active Accounts</CardDescription>
+          <CardDescription>Active Users</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            45,678
+            {stats?.users}
           </CardTitle>
-          <CardAction>
+          {/* <CardAction>
             <Badge variant="outline">
               <IconTrendingUp />
               +12.5%
             </Badge>
-          </CardAction>
+          </CardAction> */}
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        {/* <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
             Strong user retention <IconTrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">Engagement exceed targets</div>
-        </CardFooter>
+        </CardFooter> */}
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Growth Rate</CardDescription>
+          <CardDescription>Places count</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            4.5%
+            {stats.places}
           </CardTitle>
-          <CardAction>
+          {/* <CardAction>
             <Badge variant="outline">
               <IconTrendingUp />
               +4.5%
             </Badge>
-          </CardAction>
+          </CardAction> */}
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+        {/* <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
             Steady performance increase <IconTrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">Meets growth projections</div>
-        </CardFooter>
+        </CardFooter> */}
       </Card>
     </div>
   );

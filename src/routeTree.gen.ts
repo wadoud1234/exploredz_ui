@@ -20,6 +20,8 @@ import { Route as AuthRegisterIndexImport } from './routes/auth/register/index'
 import { Route as AuthLoginIndexImport } from './routes/auth/login/index'
 import { Route as DashboardUsersIndexImport } from './routes/_dashboard/users/index'
 import { Route as DashboardPlacesIndexImport } from './routes/_dashboard/places/index'
+import { Route as DashboardUsersIdImport } from './routes/_dashboard/users/$id'
+import { Route as DashboardPlacesIdImport } from './routes/_dashboard/places/$id'
 
 // Create/Update Routes
 
@@ -76,6 +78,18 @@ const DashboardPlacesIndexRoute = DashboardPlacesIndexImport.update({
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 
+const DashboardUsersIdRoute = DashboardUsersIdImport.update({
+  id: '/users/$id',
+  path: '/users/$id',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const DashboardPlacesIdRoute = DashboardPlacesIdImport.update({
+  id: '/places/$id',
+  path: '/places/$id',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -115,6 +129,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexImport
       parentRoute: typeof DashboardRouteImport
     }
+    '/_dashboard/places/$id': {
+      id: '/_dashboard/places/$id'
+      path: '/places/$id'
+      fullPath: '/places/$id'
+      preLoaderRoute: typeof DashboardPlacesIdImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/_dashboard/users/$id': {
+      id: '/_dashboard/users/$id'
+      path: '/users/$id'
+      fullPath: '/users/$id'
+      preLoaderRoute: typeof DashboardUsersIdImport
+      parentRoute: typeof DashboardRouteImport
+    }
     '/_dashboard/places/': {
       id: '/_dashboard/places/'
       path: '/places'
@@ -152,6 +180,8 @@ interface DashboardRouteRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardTeamRoute: typeof DashboardTeamRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardPlacesIdRoute: typeof DashboardPlacesIdRoute
+  DashboardUsersIdRoute: typeof DashboardUsersIdRoute
   DashboardPlacesIndexRoute: typeof DashboardPlacesIndexRoute
   DashboardUsersIndexRoute: typeof DashboardUsersIndexRoute
 }
@@ -160,6 +190,8 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
   DashboardTeamRoute: DashboardTeamRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardPlacesIdRoute: DashboardPlacesIdRoute,
+  DashboardUsersIdRoute: DashboardUsersIdRoute,
   DashboardPlacesIndexRoute: DashboardPlacesIndexRoute,
   DashboardUsersIndexRoute: DashboardUsersIndexRoute,
 }
@@ -188,6 +220,8 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof DashboardAnalyticsRoute
   '/team': typeof DashboardTeamRoute
   '/': typeof DashboardIndexRoute
+  '/places/$id': typeof DashboardPlacesIdRoute
+  '/users/$id': typeof DashboardUsersIdRoute
   '/places': typeof DashboardPlacesIndexRoute
   '/users': typeof DashboardUsersIndexRoute
   '/auth/login': typeof AuthLoginIndexRoute
@@ -199,6 +233,8 @@ export interface FileRoutesByTo {
   '/analytics': typeof DashboardAnalyticsRoute
   '/team': typeof DashboardTeamRoute
   '/': typeof DashboardIndexRoute
+  '/places/$id': typeof DashboardPlacesIdRoute
+  '/users/$id': typeof DashboardUsersIdRoute
   '/places': typeof DashboardPlacesIndexRoute
   '/users': typeof DashboardUsersIndexRoute
   '/auth/login': typeof AuthLoginIndexRoute
@@ -212,6 +248,8 @@ export interface FileRoutesById {
   '/_dashboard/analytics': typeof DashboardAnalyticsRoute
   '/_dashboard/team': typeof DashboardTeamRoute
   '/_dashboard/': typeof DashboardIndexRoute
+  '/_dashboard/places/$id': typeof DashboardPlacesIdRoute
+  '/_dashboard/users/$id': typeof DashboardUsersIdRoute
   '/_dashboard/places/': typeof DashboardPlacesIndexRoute
   '/_dashboard/users/': typeof DashboardUsersIndexRoute
   '/auth/login/': typeof AuthLoginIndexRoute
@@ -226,6 +264,8 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/team'
     | '/'
+    | '/places/$id'
+    | '/users/$id'
     | '/places'
     | '/users'
     | '/auth/login'
@@ -236,6 +276,8 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/team'
     | '/'
+    | '/places/$id'
+    | '/users/$id'
     | '/places'
     | '/users'
     | '/auth/login'
@@ -247,6 +289,8 @@ export interface FileRouteTypes {
     | '/_dashboard/analytics'
     | '/_dashboard/team'
     | '/_dashboard/'
+    | '/_dashboard/places/$id'
+    | '/_dashboard/users/$id'
     | '/_dashboard/places/'
     | '/_dashboard/users/'
     | '/auth/login/'
@@ -284,6 +328,8 @@ export const routeTree = rootRoute
         "/_dashboard/analytics",
         "/_dashboard/team",
         "/_dashboard/",
+        "/_dashboard/places/$id",
+        "/_dashboard/users/$id",
         "/_dashboard/places/",
         "/_dashboard/users/"
       ]
@@ -305,6 +351,14 @@ export const routeTree = rootRoute
     },
     "/_dashboard/": {
       "filePath": "_dashboard/index.tsx",
+      "parent": "/_dashboard"
+    },
+    "/_dashboard/places/$id": {
+      "filePath": "_dashboard/places/$id.tsx",
+      "parent": "/_dashboard"
+    },
+    "/_dashboard/users/$id": {
+      "filePath": "_dashboard/users/$id.tsx",
       "parent": "/_dashboard"
     },
     "/_dashboard/places/": {

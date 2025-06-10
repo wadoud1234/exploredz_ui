@@ -1,28 +1,34 @@
-import LoadingComponent from "@/components/custom/loading-component";
+// import LoadingComponent from "@/components/custom/loading-component";
+import { PlacesGridSkeleton } from "@/components/place-card-skeleton";
+import { PlacesGrid } from "@/components/places-grid";
 import { SiteHeader } from "@/components/site-header";
+// import { AspectRatio } from "@/components/ui/aspect-ratio";
 // import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { usePlacesQueryOptions } from "@/data/queries";
+// import {
+//   Card,
+//   CardContent,
+//   CardDescription,
+//   CardHeader,
+//   CardTitle,
+// } from "@/components/ui/card";
+// import { IMAGEKIT_URL_ENDPOINT } from "@/constants";
+import { getPlacesQueryOptions } from "@/data/queries";
 import CreatePlaceDialog from "@/forms/places/create-place.form";
+// import EditPlaceDialog from "@/forms/places/edit-place.form";
 import type { Place } from "@/types";
+// import { Image } from "@imagekit/react";
+// import type { Place } from "@/types";
+import { useSuspenseQuery } from "@tanstack/react-query";
 // import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { toast } from "sonner";
 // import { PlusIcon } from "lucide-react";
 // import { toast } from "sonner";
 
-const placesQueryOptions = usePlacesQueryOptions();
+// const placesQueryOptions = usePlacesQueryOptions();
 export const Route = createFileRoute("/_dashboard/places/")({
   component: RouteComponent,
-  loader: ({ context }) => {
-    context.queryClient.ensureQueryData(placesQueryOptions);
-  },
 });
 
 // const places = [
@@ -80,13 +86,13 @@ function RouteComponent() {
   return (
     <>
       <SiteHeader>Places</SiteHeader>
-      <div className="flex flex-col gap-6 p-6">
+      <div className="flex flex-col w-full h-full gap-6 p-6">
         {/* Header Section */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Places</h1>
             <p className="text-muted-foreground">
-              Discover and manage beautiful places across Algeria
+              manage and view your added places
             </p>
           </div>
           {/* <Button className="font-semibold">
@@ -95,54 +101,112 @@ function RouteComponent() {
           </Button> */}
           <CreatePlaceDialog />
         </div>
-        <Suspense fallback={<LoadingComponent />}>
-          <PlacesGrid />
+        <Suspense fallback={<PlacesGridSkeleton />}>
+          <PlacesGridParent />
         </Suspense>
       </div>
     </>
   );
 }
 
-function PlacesGrid() {
-  const places: Place[] = [];
-  // const { error } = useSuspenseQuery(usePlacesQueryOptions());
-  // if (error) {
-  //   toast.error("Places Fetching Failed", { description: error.message });
-  //   return <p>Places Fetching Failed</p>;
-  // }
+function PlacesGridParent() {
+  const { data: places, error } = useSuspenseQuery(getPlacesQueryOptions());
+  if (error) {
+    toast.error("Places Fetching Failed", { description: error.message });
+    return <p>Places Fetching Failed</p>;
+  }
+
+  const handleEdit = (place: Place) => {
+    console.log("Editing place:", place);
+    // Implement your edit logic here
+    alert(`Editing place: ${place.name}`);
+  };
+
+  const handleDelete = (place: Place) => {
+    console.log("Deleting place:", place);
+    // Implement your delete logic here
+    if (confirm(`Are you sure you want to delete "${place.name}"?`)) {
+      // setPlaces((prev) => prev.filter((p) => p.id !== place.id));
+    }
+  };
+
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 w-full">
-      {Array.isArray(places) && places.length > 0 ? (
-        places.map((place) => (
-          <Card key={place.id} className="overflow-hidden">
-            <div className="aspect-video relative">
-              <img
-                src={"https://placehold.co/400x300"}
-                alt={place.name}
-                // fill
-                className="object-cover"
-              />
-            </div>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg">{place.name}</CardTitle>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <span>{place.wilayaCode}</span>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-sm">
-                {place.description}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        ))
-      ) : (
-        <>No places found</>
-      )}
-    </div>
+    <PlacesGrid places={places} onEdit={handleEdit} onDelete={handleDelete} />
   );
 }
+
+// function PlacesGrid() {
+//   const { data: places, error } = useSuspenseQuery(getPlacesQueryOptions());
+//   if (error) {
+//     toast.error("Places Fetching Failed", { description: error.message });
+//     return <p>Places Fetching Failed</p>;
+//   }
+
+//   const handleEdit = (place: Place) => {
+//     console.log("Editing place:", place);
+//     // Implement your edit logic here
+//     alert(`Editing place: ${place.name}`);
+//   };
+
+//   const handleDelete = (place: Place) => {
+//     console.log("Deleting place:", place);
+//     // Implement your delete logic here
+//     if (confirm(`Are you sure you want to delete "${place.name}"?`)) {
+//       // setPlaces((prev) => prev.filter((p) => p.id !== place.id));
+//     }
+//   };
+//   return (
+//     <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+//       <PlacesGrid
+//         places={places}
+//         onEdit={handleEdit}
+//         onDelete={handleDelete}
+//         loading={loading}
+//       />
+
+//       {/* {Array.isArray(places) && places.length > 0 ? (
+//         places.map((place) => (
+//           <Card
+//             key={place.id}
+//             className="pt-0 flex-col flex flex-1 bg-blue-100"
+//           >
+//             <AspectRatio ratio={16 / 9}>
+//               <Image
+//                 urlEndpoint={IMAGEKIT_URL_ENDPOINT} //"https://ik.imagekit.io/your_imagekit_id"
+//                 src={place.images[0]}
+//                 fill
+//                 className="object-cover object-center h-full w-full border-b"
+//                 alt={place.name}
+//                 // transformation={[{ width: 400, height: 300 }, { rotation: 90 }]}
+//               />
+//             </AspectRatio>
+//             <CardHeader className="bg-red-600 flex-1 flex flex-col">
+//               <div className="flex items-start justify-between flex-1">
+//                 <div className="flex flex-col bg-green-600 space-y-1 flex-1">
+//                   <div className="flex items-center justify-between gap-2 flex-1">
+//                     <span className="flex text-lg flex-1">
+//                       {place.name.split(" ").slice(0, 30).join(" ")}
+//                     </span>
+//                     <div className="shrink-0">
+//                       <EditPlaceDialog place={place} />
+//                     </div>
+//                   </div>
+//                   <div className="text-sm text-muted-foreground">
+//                     <span>{place.wilayaCode}</span>
+//                   </div>
+//                 </div>
+//               </div>
+//             </CardHeader>
+//             <CardContent className="">
+//               <CardDescription className="text-sm ine-clamp-2">
+//                 {place.description}
+//               </CardDescription>
+//             </CardContent>
+//           </Card>
+//         ))
+//       ) : (
+//         <>No places found</>
+//       )}*/}
+//     </div>
+//   );
+// }

@@ -7,9 +7,10 @@ export const Route = createFileRoute("/_dashboard/team")({
 });
 
 function RouteComponent() {
-  return;
-  <>
-    <SiteHeader>Team</SiteHeader>
-    <UnderConstruction />
-  </>;
+  return (
+    <>
+      <SiteHeader>Team</SiteHeader>
+      <UnderConstruction />
+    </>
+  );
 }

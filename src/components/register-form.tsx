@@ -19,11 +19,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import SubmitButton from "./custom/submit-button";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { ResponseType } from "@/types";
 import { API_URL } from "@/constants";
+import { useRouter } from "@tanstack/react-router";
 
 const registerSchema = z.object({
   name: z
@@ -41,6 +42,8 @@ const registerSchema = z.object({
 type RegisterSchema = z.infer<typeof registerSchema>;
 
 function useRegisterForm() {
+  const navigate = useNavigate();
+  const router = useRouter();
   const form = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -66,6 +69,8 @@ function useRegisterForm() {
     },
     onSuccess: () => {
       toast.success("Account Created");
+      router.invalidate();
+      navigate({ to: "/auth/login" });
     },
     onError: (error) => {
       toast.error("Error", { description: error.message });

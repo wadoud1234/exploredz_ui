@@ -61,7 +61,6 @@ function useLoginForm() {
         token: string;
         user: User;
       }>;
-      console.log({ cookies: response.headers });
       if (data.success) return data;
       else throw new Error(data.error);
     },

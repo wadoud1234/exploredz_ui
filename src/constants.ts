@@ -1,4 +1,5 @@
-export const API_URL = import.meta.env.VITE_API_URL
+export const API_URL: string = import.meta.env.VITE_API_URL!
+export const IMAGEKIT_URL_ENDPOINT: string = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT!
 
 export const wilayas = [
     { code: 1, name: "Adrar" },
@@ -60,3 +61,10 @@ export const wilayas = [
     { code: 57, name: "El M'Ghair" },
     { code: 58, name: "El Menia" },
 ];
+export function fromCodeToWilaya(code: number) {
+    return wilayas.find((wilaya) => wilaya.code === code)?.name;
+}
+
+export function fromWilayaToCode(wilayaName: string) {
+    return wilayas.find((wilaya) => wilaya.name === wilayaName)?.code;
+}

@@ -10,7 +10,7 @@ type Props = Omit<
 
 export default function SubmitButton({ isPending, children, ...props }: Props) {
   return (
-    <Button type="submit" disabled={isPending} {...props}>
+    <Button {...props} type="submit" disabled={isPending}>
       {isPending ? <Loader2Icon className="mr-2 animate-spin" /> : children}
     </Button>
   );

@@ -14,7 +14,6 @@ export const Route = createFileRoute("/_dashboard")({
   component: RouteComponent,
   beforeLoad: async ({ context }) => {
     const data = await context.queryClient.getQueryData(["user"]);
-    console.log({ data });
     if (!data) throw redirect({ to: "/auth/login" });
   },
 });

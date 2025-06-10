@@ -1,11 +1,9 @@
 import {
   IconChartBar,
-  IconInnerShadowTop,
   IconMap,
   IconUsers,
   IconUsersGroup,
 } from "@tabler/icons-react";
-
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -19,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 // import { useAuth } from "@/providers/auth.provider";
 import { Link } from "@tanstack/react-router";
+import Logo from "./custom/logo";
 
 const data = {
   user: {
@@ -52,7 +51,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // const user = useAuth((state) => state.user)!;
-    return (
+  return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
@@ -62,8 +61,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <Link to="/">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <Logo width={40} height={40} />
+                {/* <IconInnerShadowTop className="!size-5" /> */}
+                <span className="text-base font-semibold">ExploreDZ</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
